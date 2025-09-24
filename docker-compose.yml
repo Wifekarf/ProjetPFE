@@ -4,6 +4,8 @@ services:
   backend:
     image: wifekpfe/fullapp:latest
     container_name: quiz-backend
+    environment:
+      - DATABASE_URL=mysql://quizuser:quizpassword@192.168.19.128:3307/quizapp
     depends_on:
       - database
     ports:
