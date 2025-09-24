@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/logo.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wevioo Quiz</title>
+  <style>
+    /* Style amélioré pour le bouton du chatbot */
+    #chatbot-toggle {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      width: 60px;
+      height: 60px;
+      background: linear-gradient(135deg, #006674 0%, #46D3E5 100%);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      z-index: 1000;
+      box-shadow: 0 4px 12px rgba(0, 102, 116, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+    }
+
+    #chatbot-toggle:hover {
+      transform: scale(1.1);
+      box-shadow: 0 6px 16px rgba(0, 102, 116, 0.4);
+    }
+
+    #chatbot-toggle::before {
+      content: "💬";
+      font-size: 24px;
+    }
+
+    #chatbot-toggle.active::before {
+      content: "✕";
+      font-size: 20px;
+    }
+
+    /* Style amélioré pour le conteneur de l'iframe */
+    #chatbot-container {
+      position: fixed;
+      bottom: 100px;
+      right: 30px;
+      width: 380px;
+      height: 600px;
+      background-color: white;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+      display: none;
+      z-index: 1000;
+      overflow: hidden;
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      transition: all 0.3s ease;
+      opacity: 0;
+      transform: translateY(20px);
+      display: none;
+    }
+
+    /* Use flex to stack header and panel */
+    #chatbot-container.visible,
+    #chatbot-container.flex {
+      display: flex;
+      flex-direction: column;
+    }
+
+    #chatbot-container.visible {
+      display: flex;
+      flex-direction: column;
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Style pour l'iframe */
+    #chatbot-iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      border-radius: 16px;
+    }
+
+    /* En-tête personnalisé pour le chatbot */
+    .chatbot-header {
+      background: linear-gradient(135deg, #006674 0%, #46D3E5 100%);
+      color: white;
+      padding: 15px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .chatbot-header h3 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .chatbot-header button {
+      background: transparent;
+      border: none;
+      color: white;
+      cursor: pointer;
+      font-size: 18px;
+    }
+
+    /* Animation d'apparition */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Responsive design */
+    @media (max-width: 480px) {
+      #chatbot-container {
+        width: 90%;
+        right: 5%;
+        height: 70vh;
+        bottom: 80px;
+      }
+      
+      #chatbot-toggle {
+        bottom: 20px;
+        right: 20px;
+        width: 50px;
+        height: 50px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+
+  <!-- Bouton flottant pour le chatbot -->
+  <button id="chatbot-toggle" aria-label="Ouvrir le chatbot"></button>
+
+  <!-- Conteneur amélioré pour le chatbot (Gemini-backed) -->
+  <!-- class="flex" supprimée -->
+  <div id="chatbot-container" aria-live="polite" aria-label="Chatbot">
+    <div class="chatbot-header">
+      <h3>Wevioo Quiz Assistant</h3>
+      <button id="chatbot-close" aria-label="Close chatbot">✕</button>
+    </div>
+    <div id="chatbot-panel" style="display:flex;flex-direction:column;flex:1;min-height:0;">
+      <div id="chatbot-messages" style="flex:1;overflow:auto;padding:12px;"></div>
+      <form id="chatbot-form" style="display:flex;gap:8px;padding:8px;border-top:1px solid #eee;align-items:center;">
+        <input id="chatbot-input" type="text" placeholder="Type your question..." style="flex:1;padding:10px;border:1px solid #ddd;border-radius:8px;" required />
+        <button id="chatbot-voice" type="button" title="Voice input" aria-label="Voice input" style="background:#f1f5f9;border:1px solid #e2e8f0;color:#334155;padding:0 10px;height:36px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;min-width:36px;">
+          🎙️
+        </button>
+        <button type="submit" style="background:#006674;color:#fff;border:none;padding:0 16px;border-radius:8px;height:36px;">Send</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Chat bubble behavior
+    const chatbotToggle = document.getElementById("chatbot-toggle");
+    const chatbotContainer = document.getElementById("chatbot-container");
+    const chatbotClose = document.getElementById("chatbot-close");
+
+    // Ouvrir/fermer le chatbot
+    const toggleChatbot = () => {
+      chatbotContainer.classList.toggle("visible");
+      chatbotToggle.classList.toggle("active");
+    };
+
+    chatbotToggle.addEventListener("click", toggleChatbot);
+    chatbotClose.addEventListener("click", toggleChatbot);
+
+    // Close when clicking outside
+    document.addEventListener("click", (e) => {
+      if (chatbotContainer.classList.contains("visible") &&
+          !chatbotContainer.contains(e.target) &&
+          e.target !== chatbotToggle) {
+        toggleChatbot();
+      }
+    });
+
+    // Button animation
+    setTimeout(() => {
+      chatbotToggle.style.animation = "bounce 2s ease infinite";
+    }, 1000);
+
+    // Show chatbot only on /home or /admin
+    function allowedPath(path) {
+      return path === '/home' || path === '/Home' || path.startsWith('/admin');
+    }
+    function applyVisibility() {
+      const ok = allowedPath(location.pathname);
+      chatbotToggle.style.display = ok ? 'flex' : 'none';
+      if (!ok) {
+        chatbotContainer.classList.remove('visible');
+      }
+    }
+    // initial
+    applyVisibility();
+    // react-router navigation hooks
+    (function() {
+      const pushState = history.pushState;
+      const replaceState = history.replaceState;
+      history.pushState = function() { const r = pushState.apply(this, arguments); applyVisibility(); return r; };
+      history.replaceState = function() { const r = replaceState.apply(this, arguments); applyVisibility(); return r; };
+      window.addEventListener('popstate', applyVisibility);
+    })();
+
+    // Gemini backend chat wiring
+    const API_BASE = window.CHATBOT_API_BASE || 'http://localhost:8000';
+    // per-user/tab session id to keep conversations separate
+    const CHAT_SESSION_KEY = 'chatbot_session_id';
+    let sessionId = localStorage.getItem(CHAT_SESSION_KEY);
+    if (!sessionId) {
+      sessionId = Math.random().toString(36).slice(2);
+      localStorage.setItem(CHAT_SESSION_KEY, sessionId);
+    }
+    const storedUser = (() => { try { return JSON.parse(localStorage.getItem('user')||'null'); } catch { return null; } })();
+    const currentUserId = storedUser?.id ?? null;
+    const messagesEl = document.getElementById('chatbot-messages');
+    const formEl = document.getElementById('chatbot-form');
+    const inputEl = document.getElementById('chatbot-input');
+    const voiceBtn = document.getElementById('chatbot-voice');
+
+    function appendMsg(text, role) {
+      const div = document.createElement('div');
+      div.style.margin = '8px 0';
+      div.style.textAlign = role === 'user' ? 'right' : 'left';
+      const bubble = document.createElement('div');
+      bubble.style.display = 'inline-block';
+      bubble.style.padding = '8px 12px';
+      bubble.style.borderRadius = '12px';
+      bubble.style.maxWidth = '80%';
+      bubble.style.background = role === 'user' ? '#e6f7fb' : '#f5f5f5';
+      // Allow simple HTML (links) from backend, escape otherwise
+      if (role === 'assistant') {
+        bubble.innerHTML = text;
+      } else {
+        bubble.textContent = text;
+      }
+      div.appendChild(bubble);
+      messagesEl.appendChild(div);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    async function askBackend(question) {
+      appendMsg(question, 'user');
+      try {
+        let headers = { 'Content-Type': 'application/json' };
+        const stored = localStorage.getItem('user');
+        if (stored) {
+          try { const { token } = JSON.parse(stored); if (token) headers['Authorization'] = `Bearer ${token}`; } catch {}
+        }
+        const res = await fetch(`${API_BASE}/api/chatbot/ask`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ question, userId: currentUserId ?? sessionId })
+        });
+        const data = await res.json();
+        if (res.status === 401) {
+          appendMsg('Unauthorized. Please log in and try again.', 'assistant');
+        } else if (data.answer) {
+          appendMsg(data.answer, 'assistant');
+        } else {
+          appendMsg('Sorry, an error occurred.', 'assistant');
+        }
+      } catch (e) {
+        appendMsg('Network error. Please try again later.', 'assistant');
+      }
+    }
+
+    formEl.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const q = inputEl.value.trim();
+      if (!q) return;
+      inputEl.value = '';
+      askBackend(q);
+    });
+
+    // Speech-to-Text (Browser API)
+    (function setupSpeech(){
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR || !voiceBtn) { if (voiceBtn) voiceBtn.style.display='none'; return; }
+      const rec = new SR();
+      let listening = false;
+      rec.lang = 'en-US';
+      rec.interimResults = true;
+      rec.maxAlternatives = 1;
+
+      function setListeningUI(on) {
+        listening = on;
+        voiceBtn.style.background = on ? '#e3f2fd' : '#f1f5f9';
+        voiceBtn.textContent = on ? '🛑' : '🎙️';
+        voiceBtn.title = on ? 'Stop voice input' : 'Voice input';
+      }
+
+      rec.onresult = (event) => {
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
+        }
+        inputEl.value = transcript.trim();
+      };
+      rec.onerror = () => setListeningUI(false);
+      rec.onend = () => setListeningUI(false);
+
+      voiceBtn.addEventListener('click', () => {
+        try {
+          if (!listening) { rec.start(); setListeningUI(true); }
+          else { rec.stop(); }
+        } catch (_) { setListeningUI(false); }
+      });
+    })();
+  </script>
+</body>
+</html>

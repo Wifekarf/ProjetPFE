@@ -1,0 +1,5 @@
+framework:
+    serializer:
+        default_context:
+            datetime_format: 'Y-m-d H:i:s'
+            datetime_timezone: 'Africa/Tunis'

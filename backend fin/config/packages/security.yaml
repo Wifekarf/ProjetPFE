@@ -1,0 +1,63 @@
+# config/packages/security.yaml
+security:
+  password_hashers:
+    Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
+
+  providers:
+    app_user_provider:
+      entity:
+        class: App\Entity\User
+        property: email
+
+  firewalls:
+    # 1) Dev & assets (no security)
+    dev:
+      pattern:   ^/(_(profiler|wdt)|css|images|js)/
+      security: false
+
+    # 2) Exempt reset-password endpoints from JWT
+    reset_password:
+      pattern:  ^/api/reset-password
+      security: false
+
+    # 3) Login JSON → issue JWT
+    login:
+      pattern:   ^/api/login$
+      stateless: true
+      json_login:
+        check_path:      /api/login
+        username_path:   email
+        password_path:   password
+        success_handler: lexik_jwt_authentication.handler.authentication_success
+        failure_handler: lexik_jwt_authentication.handler.authentication_failure
+
+    # 4) Protect all other /api/* with JWT
+    api:
+      pattern:   ^/api
+      stateless: true
+      jwt: ~
+
+  access_control:
+    # You can optionally list them here, but they're already outside the JWT firewall:
+    - { path: ^/api/reset-password, roles: IS_AUTHENTICATED_ANONYMOUSLY }
+    - { path: ^/api/prog-problems/verify-code$, roles: PUBLIC_ACCESS }
+    - { path: ^/api/quizzes/verify-code, roles: PUBLIC_ACCESS }
+    - { path: ^/api/quiz/session/start$, roles: PUBLIC_ACCESS }
+
+    # Lire le problème (titre, description, etc.)
+    - { path: ^/api/prog-problems/\d+$, roles: PUBLIC_ACCESS }
+
+    # Lire les tâches
+    - { path: ^/api/prog-problems/\d+/tasks$, roles: PUBLIC_ACCESS }
+
+    # Démarrer (ou affecter) le problème côté invité
+    - { path: ^/prog-actions/(start-problem|guest-assign)$, roles: PUBLIC_ACCESS }
+
+    # Login & register remain open
+    - { path: ^/api/login$,    methods: [OPTIONS,POST], roles: IS_AUTHENTICATED_ANONYMOUSLY }
+    - { path: ^/api/register$, methods: [OPTIONS,POST], roles: PUBLIC_ACCESS }
+    # allow chatbot route to be public
+    - { path: ^/api/chatbot/ask$, roles: PUBLIC_ACCESS, methods: [POST, OPTIONS] }
+
+    # Everything else under /api requires JWT
+    - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }

@@ -1,0 +1,46 @@
+version: '3.9'
+
+services:
+  backend:
+    build: ./backend fin
+    container_name: quiz-backend
+    volumes:
+      - ./backend:/var/www/html
+    depends_on:
+      - database
+    ports:
+      - "8000:8000"
+    networks:
+      - quiz_network
+
+  frontend:
+    build: ./QuizFront
+    container_name: quiz-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - quiz_network
+
+  database:
+    image: mysql:8
+    container_name: quiz-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: quizapp
+      MYSQL_USER: quizuser
+      MYSQL_PASSWORD: quizpassword
+    ports:
+      - "3307:3306"
+    volumes:
+      - quiz_db_data:/var/lib/mysql
+    networks:
+      - quiz_network
+
+networks:
+  quiz_network:
+
+volumes:
+  quiz_db_data:
