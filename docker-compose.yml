@@ -2,10 +2,8 @@ version: '3.9'
 
 services:
   backend:
-    build: ./backend fin
+    image: wifekpfe/fullapp:latest
     container_name: quiz-backend
-    volumes:
-      - ./backend:/var/www/html
     depends_on:
       - database
     ports:
@@ -14,7 +12,7 @@ services:
       - quiz_network
 
   frontend:
-    build: ./QuizFront
+    image: wifekpfe/front:latest
     container_name: quiz-frontend
     ports:
       - "3000:3000"
